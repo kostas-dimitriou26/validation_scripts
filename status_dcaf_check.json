@@ -1,8 +1,8 @@
 {
   "check_name": "DCAF_CA_Check",
-  "timestamp": "2026-07-01 16:18:23",
+  "timestamp": "2026-08-11 17:34:32",
   "checks": {
-    "new_CAs": "CHECK",
+    "new_CAs": "NO",
     "send_notice_today": "NO"
   }
 }
