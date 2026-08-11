@@ -18,48 +18,54 @@ import subprocess
 
 CATEGORY = "ORANGE"
 RECIPIENTS = "kostas.dimitriou@morningstar.com"
-# ============================================================
-# STEP 1 — Run the DCAF script and wait for it to finish
-# ============================================================
-print("Running DCAF check...")
-subprocess.run([sys.executable, "CBOE_DCAF_kostas.py"])
-
-print("Running CBOE RBICS comparison check...")
-subprocess.run([sys.executable, "CBOE_RBICS_comparison_Kostas.py"])
-
-print("Running duplicate open timespans check...")
-subprocess.run([sys.executable, "Duplicate_open_timespans_Kostas.py"])
-
-print("Running day shift QC check...")
-subprocess.run([sys.executable, "Day_shift_QC_check_Kostas.py"])
 
 # ============================================================
-# STEP 2 — Read the JSON status file that DCAF script produced
+# Helper — run a check script, and safely load its JSON status
 # ============================================================
-with open("status_dcaf_check.json", "r") as f:
-    dcaf_result = json.load(f)
+def run_check(script_name, status_file, display_name):
+    print(f"Running {display_name}...")
+    result = subprocess.run([sys.executable, script_name])
 
-with open("status_CBOE_RBICS_Comparison.json", "r") as f:
-    rbics_result = json.load(f)
+    if result.returncode != 0:
+        print(f"  -> {display_name} FAILED (exit code {result.returncode})")
+        return {
+            "check_name": display_name,
+            "checks": {display_name: "ERROR"}
+        }
 
-with open("status_duplicate_open_timespans.json", "r") as f:
-    duplicate_timespans_result = json.load(f)
+    try:
+        with open(status_file, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"  -> {display_name} status file unreadable: {e}")
+        return {
+            "check_name": display_name,
+            "checks": {display_name: "ERROR"}
+        }
 
-with open("status_Day_shift_QC_checks.json", "r") as f:
-    day_shift_qc_result = json.load(f)
-
-
+# ============================================================
+# STEP 1 & 2 combined — run each check, load its status safely
+# ============================================================
+dcaf_result = run_check("CBOE_DCAF_kostas.py", "status_dcaf_check.json", "DCAF_CA_Check")
+rbics_result = run_check("CBOE_RBICS_comparison_Kostas.py", "status_CBOE_RBICS_Comparison.json", "CBOE_RBICS_Comparison")
+duplicate_timespans_result = run_check("Duplicate_open_timespans_Kostas.py", "status_duplicate_open_timespans.json", "Duplicate_Open_Timespans")
+day_shift_qc_result = run_check("Day_shift_QC_check_Kostas.py", "status_Day_shift_QC_checks.json", "Day_Shift_QC_Check")
 
 # ============================================================
 # STEP 3 — Build the email table rows from the JSON
 # ============================================================
-all_results = [dcaf_result, rbics_result,duplicate_timespans_result, day_shift_qc_result]
+all_results = [dcaf_result, rbics_result, duplicate_timespans_result, day_shift_qc_result]
 
 table_rows = ""
 for result in all_results:
-    script_name = result["check_name"]  # e.g. "DCAF_CA_Check"
+    script_name = result["check_name"]
     for check, status in result["checks"].items():
-        color = "red" if "CHECK" in status else "green"
+        if status == "ERROR":
+            color = "orange"
+        elif "CHECK" in status:
+            color = "red"
+        else:
+            color = "green"
         table_rows += f"""
         <tr>
             <td style='padding:8px;'>{script_name}</td>
@@ -81,7 +87,6 @@ email_body = f"""
 
 # ============================================================
 # STEP 4 — Send the email via Outlook
-# Subject contains [ORANGE] so Outlook rule can sort it automatically
 # ============================================================
 outlook = win32.gencache.EnsureDispatch('Outlook.Application')
 mail = outlook.CreateItem(0)

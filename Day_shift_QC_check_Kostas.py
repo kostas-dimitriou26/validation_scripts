@@ -220,19 +220,19 @@ check_12 = pd.DataFrame(result_12, columns=colnames_12)
 
 # --- CHECK 14: names for pq id 42 and pq id 1 matching ---
 sql_14 = """select * from (select distinct its.security_id,
-sc.string_value as ISIN,
+sc.string_value as ISIN, 
 sc2.string_value as name_pqid_1,
 sc3.string_value as name_pqid_42,
 case when lower(sc2.string_value)=lower(sc3.string_value) then 'Ok' else 'Check' end as matching
 from index_timespan it
 join index_timespan_security its on it.timespan_id = its.timespan_id
-join calc_security cs on its.timespan_id =cs.timespan_id and it.`type` =cs.name and it.valid_from =cs.the_date
+join calc_security cs on its.timespan_id =cs.timespan_id and it.`type` =cs.name and it.valid_from =cs.the_date 
 join index_timespan_security_aspect itsa on its.timespan_id =itsa.timespan_id and its.listing_id =itsa.listing_id and itsa.name ='Fraction'
 join security_characteristic sc on its.security_id = sc.security_id and sc.name = 'ISIN' and CURRENT_DATE() between sc.valid_from and sc.valid_to
 join security_characteristic sc2 on its.security_id = sc2.security_id and sc2.name = 'Name' and CURRENT_DATE() between sc2.valid_from and sc2.valid_to and sc2.provider_query_id=1
 join security_characteristic sc3 on its.security_id = sc3.security_id and sc3.name = 'MSName' and CURRENT_DATE() between sc3.valid_from and sc3.valid_to and sc3.provider_query_id=42
 join `security` s on its.security_id=s.security_id
-where it.valid_from = CURRENT_DATE()  and it.`type` in ('Open','Rebalance','Fixing')
+where it.valid_from = CURRENT_DATE()  and it.`type` in ('Open,''Rebalance','Fixing')
 and abs(itsa.double_value) <> 0
 and s.security_type='Common Stock'
 and cs.client_id =3

@@ -29,8 +29,8 @@ currdate = date.today()
 #Connecting to ticks DB
 try:
     conn= mariadb.connect(
-        user='srikanth.pitti',
-        password=']v<x>KNZQs-6UPlpwm4vd9{IFQlMxl{kSGXWDsZl',
+        user='ops_pending_ca_tracker',
+        password='zmUFk8Xxcc8WrycCrMVe0plI84KkQAmqaOwoKHMn',
         host='mb-prd-db.us-east-1.mif0286.eas.morningstar.com',
         port=3306,
         database='ticks'
@@ -79,9 +79,9 @@ cboe_members=','.join(map(str,ticks_data['ISIN']))
 
 try:
     conn1= mariadb.connect(
-        user='srikanth.pitti',
-        password='lhY4YysW>Z!nngpaKjDrAsE?0o1ohdHyIk9t_)Qe',
-        host='mb-prd-raw-db.us-east-1.mif0286.eas.morningstar.com',
+        user='kostas.dimitriou',
+        password='1efp93nwb8ROfi3eXxtZRMG0_yYfDmKJjcjZmF3u',
+        host='mb-prd-raw-db.us-west-2.mif0286.eas.morningstar.com',
         port=3306,
         database='raw_data'
     )
