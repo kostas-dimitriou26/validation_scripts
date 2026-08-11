@@ -212,15 +212,16 @@ else:
     print(" ")
 
 #produce JSON output
-new_cas_status='CHECK' if not CAs.empty else 'NO'
-send_notice_status='CHECK' if (final_df['Send_notice_today']=='Yes').any() else 'NO'
+new_cas_status='Late CAs:CHECK' if not CAs.empty else 'Late CAs:clear'
+send_notice_status='ECA notice:CHECK' if (final_df['Send_notice_today']=='Yes').any() else 'ECA notice:clear'
+
+combined_status = f"Last bd: {date} | {new_cas_status} | {send_notice_status}"
 
 status_data = {
     "check_name": "DCAF_CA_Check",
     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "checks": {
-        "new_CAs": new_cas_status,
-        "send_notice_today": send_notice_status
+        "DCAF_summary": combined_status
     }
 }
 with open("status_dcaf_check.json", "w") as f:
