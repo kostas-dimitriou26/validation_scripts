@@ -1,0 +1,12 @@
+{
+  "check_name": "Corporate_Action_Import_Run_Check",
+  "timestamp": "2026-08-12 18:27:07",
+  "checks": {
+    "Latest run status": "CLEAR: id 169862 status=success",
+    "Non-success entries (last 3 days)": "CHECK: ids [169699]",
+    "Unexpected CA volume": "CLEAR: CA volume within 2.0 std of baseline (mean=2407)",
+    "Total vs done securities mismatch": "CHECK: ids [169699]",
+    "Start/End duration > 10min": "CLEAR: all runs completed within 10 min",
+    "Gap between runs > 20min": "CLEAR: no gaps > 20 min between runs"
+  }
+}
