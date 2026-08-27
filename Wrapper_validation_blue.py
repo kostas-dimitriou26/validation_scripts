@@ -1,77 +1,75 @@
-import pandas as pd
-from pathlib import Path
-import os
-import mariadb
-import datetime
-import time
 import sys
-from pandas.tseries.offsets import *
-import win32com.client as win32
-import numpy as np
-from pandas.tseries.offsets import CustomBusinessDay
-from datetime import date
 from datetime import datetime, timedelta, date
 import json
 import win32com.client as win32
 import subprocess
 
 
-CATEGORY = "ORANGE"
+CATEGORY = "BLUE"
 RECIPIENTS = "kostas.dimitriou@morningstar.com"
 
-# ============================================================
-# Helper — run a check script, and safely load its JSON status
-# ============================================================
+RT_MISMATCH_HOUR = 16
+RT_MISMATCH_MINUTE = 30
+TOLERANCE_MINUTES = 20
+
+def is_due(hh, mm, now):
+    scheduled = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    return abs((now - scheduled).total_seconds()) <= TOLERANCE_MINUTES * 60
+
 def run_check(script_name, status_file, display_name):
     print(f"Running {display_name}...")
     result = subprocess.run([sys.executable, script_name])
-
     if result.returncode != 0:
         print(f"  -> {display_name} FAILED (exit code {result.returncode})")
-        return {
-            "check_name": display_name,
-            "checks": {display_name: "ERROR"}
-        }
-
+        return {"check_name": display_name, "checks": {display_name: "ERROR"}}
     try:
         with open(status_file, "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"  -> {display_name} status file unreadable: {e}")
-        return {
-            "check_name": display_name,
-            "checks": {display_name: "ERROR"}
-        }
+        return {"check_name": display_name, "checks": {display_name: "ERROR"}}
 
 # ============================================================
-# STEP 1 & 2 combined — run each check, load its status safely
+# STEP 1 & 2 — CA_backend always runs; RT check only at 16:30
 # ============================================================
-dcaf_result = run_check("CBOE_DCAF_kostas.py", "status_dcaf_check.json", "DCAF_CA_Check")
-rbics_result = run_check("CBOE_RBICS_comparison_Kostas.py", "status_CBOE_RBICS_Comparison.json", "CBOE_RBICS_Comparison")
-duplicate_timespans_result = run_check("Duplicate_open_timespans_Kostas.py", "status_duplicate_open_timespans.json", "Duplicate_Open_Timespans")
-day_shift_qc_result = run_check("Day_shift_QC_check_Kostas.py", "status_Day_shift_QC_checks.json", "Day_Shift_QC_Check")
+now = datetime.now()
+
+CA_backend_result = run_check("CA_backend_kostas.py", "status_corporate_action_import_run.json", "CA_backend_Check")
+
+if is_due(RT_MISMATCH_HOUR, RT_MISMATCH_MINUTE, now):
+    RT_mismatch = run_check("RT loading qc check_kostas.py", "RT_loading_qc_check.json", "RT_loading_qc_Check")
+else:
+    print("Skipping RT_loading_qc_Check — not due until 16:30")
+    RT_mismatch = {"check_name": "RT_loading_qc_Check", "checks": {"Skipping": "to be run at 16:30"}}
 
 # ============================================================
 # STEP 3 — Build the email table rows from the JSON
 # ============================================================
-all_results = [dcaf_result, rbics_result, duplicate_timespans_result, day_shift_qc_result]
+all_results = [CA_backend_result, RT_mismatch]
 
 table_rows = ""
 for result in all_results:
     script_name = result["check_name"]
+
+    status_lines = []
     for check, status in result["checks"].items():
         if status == "ERROR":
-            color = "orange"
+            color = "blue"
+        elif status=='to be run at 16:30':
+            color = "black"
         elif "CHECK" in status:
             color = "red"
         else:
             color = "green"
-        table_rows += f"""
-        <tr>
-            <td style='padding:8px;'>{script_name}</td>
-            <td style='padding:8px; color:{color};'><b>{status}</b></td>
-        </tr>"""
+        status_lines.append(f"<span style='color:{color};'><b>{check}:</b> {status}</span>")
 
+    combined_status_html = "<br>".join(status_lines)
+
+    table_rows += f"""
+        <tr>
+            <td style='padding:8px; vertical-align:top;'>{script_name}</td>
+            <td style='padding:8px;'>{combined_status_html}</td>
+        </tr>"""
 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
 email_body = f"""

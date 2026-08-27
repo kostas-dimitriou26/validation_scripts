@@ -12,17 +12,14 @@ pd.set_option('display.width', 1000)
 # Config
 # ============================================================
 LOOKBACK_DAYS = 2            # T, T-1, T-2 -> 3 calendar days total
-HISTORY_DAYS = 365            # window used to build the "normal" daily CA volume baseline
 START_END_MAX_MINUTES = 10    # max allowed start_time -> end_time duration
 GAP_MAX_MINUTES = 20          # max allowed gap between consecutive end_time entries
-Z_THRESHOLD = 2.0             # how many std-devs away counts as "unexpected" CA volume
 
 OUTPUT_FILE = "status_corporate_action_import_run.json"
 CHECK_NAME = "Corporate_Action_Import_Run_Check"
 
 today = date.today()
 window_start = today - timedelta(days=LOOKBACK_DAYS)   # T-2, 00:00:00
-history_start = today - timedelta(days=HISTORY_DAYS)
 
 # ============================================================
 # Connecting to ticks DB
@@ -62,21 +59,6 @@ for c in ["total_securities", "done_securities", "no_of_cas"]:
     if c in df.columns:
         df[c] = df[c].astype(float)
 
-# ============================================================
-# Query 2 — last 12 months of daily CA counts, business days only
-# (used to build the "expected" volume baseline)
-# ============================================================
-sql_history = """
-    SELECT DATE(end_time) AS run_date, SUM(no_of_cas) AS total_cas
-    FROM corporate_action_backend.corporate_action_import_run
-    WHERE end_time >= %s
-      AND DAYOFWEEK(end_time) NOT IN (1, 7)   -- exclude Sunday (1) and Saturday (7)
-    GROUP BY DATE(end_time)
-"""
-cur.execute(sql_history, (history_start,))
-hist_rows = cur.fetchall()
-hist_df = pd.DataFrame(hist_rows, columns=["run_date", "total_cas"])
-hist_df["total_cas"] = hist_df["total_cas"].astype(float)  # SUM() -> Decimal, cast for std/mean
 
 conn.close()
 
@@ -119,33 +101,10 @@ non_success_status = (
 )
 
 # ============================================================
-# CHECK 3 — unexpected low/high daily CA volume vs 1yr baseline
+# CHECK 3 — Daily sum of CAs
 # ============================================================
-if hist_df.empty or pd.isna(hist_df["total_cas"].std()) or hist_df["total_cas"].std() == 0:
-    volume_status = "CHECK: not enough history to build baseline"
-else:
-    mean_cas = hist_df["total_cas"].mean()
-    std_cas = hist_df["total_cas"].std()
-
-    df["run_date"] = df["end_time"].dt.date
-    daily_recent = df.groupby("run_date")["no_of_cas"].sum().reset_index()
-
-    flagged_days = []
-    for _, r in daily_recent.iterrows():
-        d = r["run_date"]
-        if d.weekday() >= 5:  # skip Sat/Sun — CA volume is always 0, nothing to flag
-            continue
-        z = (r["no_of_cas"] - mean_cas) / std_cas
-        if abs(z) > Z_THRESHOLD:
-            flagged_days.append(d.strftime("%Y-%m-%d"))
-
-    if flagged_days:
-        volume_status = (
-            f"CHECK: unusual CA volume on {flagged_days} "
-            f"(baseline mean={mean_cas:.0f}, std={std_cas:.0f})"
-        )
-    else:
-        volume_status = f"CLEAR: CA volume within {Z_THRESHOLD} std of baseline (mean={mean_cas:.0f})"
+today_cas = df.loc[df["end_time"].dt.date == today, "no_of_cas"].sum()
+volume_status = f"Today's CA count: {int(today_cas)}"
 
 # ============================================================
 # CHECK 4 — total_securities == done_securities for every entry
@@ -177,22 +136,26 @@ duration_status = (
 # ============================================================
 df_sorted = df.sort_values("end_time", ascending=True).reset_index(drop=True)
 df_sorted["gap_min"] = df_sorted["end_time"].diff().dt.total_seconds() / 60
-gap_ids = df_sorted.loc[df_sorted["gap_min"] > GAP_MAX_MINUTES, "id"].tolist()
+df_sorted["prev_id"] = df_sorted["id"].shift(1)
+
+gap_pairs_df = df_sorted.loc[df_sorted["gap_min"] > GAP_MAX_MINUTES, ["prev_id", "id"]]
+gap_pairs = [f"{int(r.prev_id)}->{int(r.id)}" for r in gap_pairs_df.itertuples()]
+
 gap_status = (
-    f"CHECK: ids {gap_ids} (gap since previous run > {GAP_MAX_MINUTES} min)" if gap_ids
-    else f"CLEAR: no gaps > {GAP_MAX_MINUTES} min between runs"
+    f"CHECK: id pairs {gap_pairs}" if gap_pairs
+    else f"CLEAR"
 )
 
 # ============================================================
 # Write status JSON (same format as the other check scripts)
-# ============================================================
+# ============================================================status_data = {
 status_data = {
     "check_name": CHECK_NAME,
     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "checks": {
         "Latest run status": latest_status,
         "Non-success entries (last 3 days)": non_success_status,
-        "Unexpected CA volume": volume_status,
+        "Today's CA volume": volume_status,
         "Total vs done securities mismatch": securities_status,
         "Start/End duration > 10min": duration_status,
         "Gap between runs > 20min": gap_status,
