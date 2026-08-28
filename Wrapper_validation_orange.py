@@ -19,6 +19,10 @@ import subprocess
 CATEGORY = "ORANGE"
 RECIPIENTS = "kostas.dimitriou@morningstar.com"
 
+SHAREPOINT_BASE_URL = (
+    "https://morningstaronline.sharepoint.com/sites/MorningstarIndexesGlobalProductServices-DailyOperations/"
+    "Shared%20Documents/Daily%20Operations/Index%20Operations/kostas_tests"
+)
 # ============================================================
 # Helper — run a check script, and safely load its JSON status
 # ============================================================
@@ -61,8 +65,8 @@ table_rows = ""
 for result in all_results:
     script_name = result["check_name"]
 
-    entry_id = result.get("email_entry_id")
-    link_html = f' <a href="outlook:{entry_id}">[Open email]</a>' if entry_id else ""
+    saved_filename = result.get("saved_html_filename")
+    link_html = f' <a href="{SHAREPOINT_BASE_URL}/{saved_filename}">[View report]</a>' if saved_filename else ""
 
     for check, status in result["checks"].items():
         if status == "ERROR":
