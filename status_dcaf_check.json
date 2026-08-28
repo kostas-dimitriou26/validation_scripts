@@ -1,7 +1,7 @@
 {
   "check_name": "DCAF_CA_Check",
-  "timestamp": "2026-08-27 11:39:39",
+  "timestamp": "2026-08-28 13:05:39",
   "checks": {
-    "DCAF_summary": "Last bd: 2026-08-26 | Late CAs:clear | ECA notice:clear"
+    "DCAF_summary": "Last bd: 2026-08-27 | Late CAs:CHECK | ECA notice:CHECK"
   }
 }
