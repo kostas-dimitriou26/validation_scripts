@@ -9,7 +9,7 @@ import os
 # Config
 # ============================================================
 TARGET_SUBJECT = "IPOs Listed Today and De-SPAC Transactions Anticipated Tomorrow"
-OUTPUT_FILE = "status_ipo_despac_check.json"
+OUTPUT_FILE = os.path.join("json_orange", "status_ipo_despac_check.json")
 CHECK_NAME = "IPO_DeSPAC_Ticker_Check"
 SHAREPOINT_LOCAL_PATH = r"C:\Users\kdimitriou\OneDrive - MORNINGSTAR INC\Indexes Global Operations-Daily Operations - Daily Operations\Index Operations\kostas_tests"
 

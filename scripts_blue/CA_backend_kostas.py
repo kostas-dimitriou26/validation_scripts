@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import json
 from datetime import date, datetime, timedelta
+import os
 
 # To display all columns
 pd.set_option('display.max_columns', None)
@@ -15,7 +16,7 @@ LOOKBACK_DAYS = 2            # T, T-1, T-2 -> 3 calendar days total
 START_END_MAX_MINUTES = 10    # max allowed start_time -> end_time duration
 GAP_MAX_MINUTES = 20          # max allowed gap between consecutive end_time entries
 
-OUTPUT_FILE = "status_corporate_action_import_run.json"
+OUTPUT_FILE = os.path.join("json_blue", "status_corporate_action_import_run.json")
 CHECK_NAME = "Corporate_Action_Import_Run_Check"
 
 today = date.today()

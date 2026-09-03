@@ -1,7 +1,0 @@
-{
-  "check_name": "Index_Timespan_Duplicate_Check",
-  "timestamp": "2026-08-28 15:39:48",
-  "checks": {
-    "Duplicate open timespans": "T: 28/08/2026 clear | T-1: 27/08/2026 clear"
-  }
-}

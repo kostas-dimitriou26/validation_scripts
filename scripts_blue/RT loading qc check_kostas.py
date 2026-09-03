@@ -18,7 +18,7 @@ while next_bd.weekday() >= 5:  # 5=Saturday, 6=Sunday
 eod_date = f"""'{today.strftime('%Y-%m-%d')}'"""#today
 open_date = f"""'{next_bd.strftime('%Y-%m-%d')}'"""#Tomorrow / next BD
 
-OUTPUT_FILE = "RT_loading_qc_check.json"
+OUTPUT_FILE = os.path.join("json_blue", "RT_loading_qc_check.json")
 CHECK_NAME = "RT_loading_qc_Check"
 
 #To display all columns
@@ -31,8 +31,8 @@ try:
     conn1= psycopg2.connect(
         host='mi-prd-db.us-west-2.mif0286.eas.morningstar.com',
         database='mi_prd_db',
-        user='yandan_chen',
-        password='XYndziwTQARZiJ36',
+        user='kostas_dimitriou',
+        password='aFcXw0aPcE4PTrF2',
         port=5432
 
     )

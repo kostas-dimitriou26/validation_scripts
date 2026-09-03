@@ -6,6 +6,7 @@ import json
 from datetime import date, datetime
 
 
+OUTPUT_FILE = os.path.join("json_orange", "status_Day_shift_QC_checks.json")
 
 
 #To display all columns
@@ -287,5 +288,5 @@ status_data = {
         "Day_shift_QC_checks": combined_status,
     }
 }
-with open("status_Day_shift_QC_checks.json", "w") as f:
+with open(OUTPUT_FILE, "w") as f:
     json.dump(status_data, f, indent=2)

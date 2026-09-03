@@ -5,8 +5,7 @@ import pandas as pd
 import json
 from datetime import date, datetime
 
-
-
+OUTPUT_FILE = os.path.join("json_orange", "status_Duplicate_open_timespans.json")
 
 #To display all columns
 pd.set_option('display.max_columns', None)
@@ -84,5 +83,5 @@ status_data = {
         "Duplicate open timespans": combined_status,
     }
 }
-with open("status_duplicate_open_timespans.json", "w") as f:
+with open(OUTPUT_FILE, "w") as f:
     json.dump(status_data, f, indent=2)

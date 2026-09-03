@@ -4,11 +4,14 @@ import sys
 import os
 import pandas as pd
 from datetime import date
+import json
+from datetime import datetime
 
 #To display all columns
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 1000)
 
+OUTPUT_FILE = os.path.join("json_orange", "status_CBOE_RBICS_Comparison.json")
 
 path1 = os.path.expanduser("~/OneDrive - MORNINGSTAR INC/Indexes Global Operations-Daily Operations - Daily Operations/Index Operations/CBOE/Checks/")
 path2 = os.path.expanduser("~/OneDrive - MORNINGSTAR INC/Daily Operations/Index Operations/CBOE/Checks/")
@@ -153,7 +156,18 @@ result_df=Comparison[~Comparison.RBICS_ECON_NAME_Match | ~Comparison.RBICS_ECON_
 
 print('\nISIN/s where there is a mismatch :\n', result_df)
 
+has_cboe_date = result_df['CBOE_Date'].notna()
+comparison_status = 'CBOE RBICS comparison:CHECK' if has_cboe_date.any() else 'CBOE RBICS comparison:clear'
 
+status_data = {
+    "check_name": "CBOE_RBICS_Comparison",
+    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "checks": {
+        "CBOE_RBICS_Comparison": comparison_status
+    }
+}
+with open(OUTPUT_FILE, "w") as f:
+    json.dump(status_data, f, indent=2)
 
 
 

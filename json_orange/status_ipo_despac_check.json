@@ -1,0 +1,8 @@
+{
+  "check_name": "IPO_DeSPAC_Ticker_Check",
+  "timestamp": "2026-09-03 17:47:59",
+  "checks": {
+    "New IPO ticker": "clear: no new IPO tickers (received 02/09/2026)"
+  },
+  "saved_html_filename": "IPO_DeSPAC_Report_2026-09-02.html"
+}

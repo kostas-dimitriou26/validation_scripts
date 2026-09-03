@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, date
 import json
 import win32com.client as win32
 import subprocess
+import os
 
 
 CATEGORY = "ORANGE"
@@ -27,8 +28,11 @@ SHAREPOINT_BASE_URL = (
 # Helper — run a check script, and safely load its JSON status
 # ============================================================
 def run_check(script_name, status_file, display_name):
+    script_path = os.path.join("scripts_orange", script_name)
+    status_path = os.path.join("json_orange", status_file)
+
     print(f"Running {display_name}...")
-    result = subprocess.run([sys.executable, script_name])
+    result = subprocess.run([sys.executable, script_path])
 
     if result.returncode != 0:
         print(f"  -> {display_name} FAILED (exit code {result.returncode})")
@@ -38,7 +42,7 @@ def run_check(script_name, status_file, display_name):
         }
 
     try:
-        with open(status_file, "r") as f:
+        with open(status_path, "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"  -> {display_name} status file unreadable: {e}")

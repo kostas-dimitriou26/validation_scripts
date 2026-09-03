@@ -1,0 +1,8 @@
+{
+  "check_name": "IPO_DeSPAC_Ticker_Check",
+  "timestamp": "2026-09-02 10:04:18",
+  "checks": {
+    "New IPO ticker": "ERROR: report email not found for today"
+  },
+  "saved_html_filename": null
+}

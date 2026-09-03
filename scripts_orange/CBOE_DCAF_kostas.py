@@ -19,6 +19,9 @@ pd.set_option('display.width', 1000)
 ###### SET DATE ######
 #date = '2026-06-29'  #insert date for T-1
 
+OUTPUT_FILE = os.path.join("json_orange", "status_dcaf_check.json")
+
+
 # Get t-1 BD
 date_aux=date.today()
 
@@ -224,5 +227,6 @@ status_data = {
         "DCAF_summary": combined_status
     }
 }
-with open("status_dcaf_check.json", "w") as f:
+
+with open(OUTPUT_FILE, "w") as f:
     json.dump(status_data, f, indent=2)

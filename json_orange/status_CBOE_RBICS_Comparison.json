@@ -1,0 +1,7 @@
+{
+  "check_name": "CBOE_RBICS_Comparison",
+  "timestamp": "2026-09-03 17:47:46",
+  "checks": {
+    "CBOE_RBICS_Comparison": "CBOE RBICS comparison:clear"
+  }
+}

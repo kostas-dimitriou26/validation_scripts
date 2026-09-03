@@ -3,10 +3,15 @@ from datetime import datetime, timedelta, date
 import json
 import win32com.client as win32
 import subprocess
+import os
 
 
 CATEGORY = "BLUE"
 RECIPIENTS = "kostas.dimitriou@morningstar.com"
+SHAREPOINT_BASE_URL = (
+    "https://morningstaronline.sharepoint.com/sites/MorningstarIndexesGlobalProductServices-DailyOperations/"
+    "Shared%20Documents/Daily%20Operations/Index%20Operations/kostas_tests"
+)
 
 RT_MISMATCH_HOUR = 16
 RT_MISMATCH_MINUTE = 30
@@ -17,13 +22,16 @@ def is_due(hh, mm, now):
     return abs((now - scheduled).total_seconds()) <= TOLERANCE_MINUTES * 60
 
 def run_check(script_name, status_file, display_name):
+    script_path = os.path.join("scripts_blue", script_name)
+    status_path = os.path.join("json_blue", status_file)
+
     print(f"Running {display_name}...")
-    result = subprocess.run([sys.executable, script_name])
+    result = subprocess.run([sys.executable, script_path])
     if result.returncode != 0:
         print(f"  -> {display_name} FAILED (exit code {result.returncode})")
         return {"check_name": display_name, "checks": {display_name: "ERROR"}}
     try:
-        with open(status_file, "r") as f:
+        with open(status_path, "r") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"  -> {display_name} status file unreadable: {e}")
@@ -35,27 +43,31 @@ def run_check(script_name, status_file, display_name):
 now = datetime.now()
 
 CA_backend_result = run_check("CA_backend_kostas.py", "status_corporate_action_import_run.json", "CA_backend_Check")
+long_term_suspension_result = run_check("long_term_suspensions.py", "status_long_term_suspension_check.json", "long_term_suspensions_Check")
 
 if is_due(RT_MISMATCH_HOUR, RT_MISMATCH_MINUTE, now):
     RT_mismatch = run_check("RT loading qc check_kostas.py", "RT_loading_qc_check.json", "RT_loading_qc_Check")
 else:
-    print("Skipping RT_loading_qc_Check — not due until 16:30")
+    print("Skipping RT_loading_qc_Check — to be run at 16:30")
     RT_mismatch = {"check_name": "RT_loading_qc_Check", "checks": {"Skipping": "to be run at 16:30"}}
 
 # ============================================================
 # STEP 3 — Build the email table rows from the JSON
 # ============================================================
-all_results = [CA_backend_result, RT_mismatch]
+all_results = [CA_backend_result,long_term_suspension_result, RT_mismatch]
 
 table_rows = ""
 for result in all_results:
     script_name = result["check_name"]
 
+    saved_filename = result.get("saved_html_filename")
+    link_html = f' <a href="{SHAREPOINT_BASE_URL}/{saved_filename}">[View report]</a>' if saved_filename else ""
+
     status_lines = []
     for check, status in result["checks"].items():
         if status == "ERROR":
             color = "blue"
-        elif status=='to be run at 16:30':
+        elif status == 'to be run at 16:30':
             color = "black"
         elif "CHECK" in status:
             color = "red"
@@ -63,7 +75,7 @@ for result in all_results:
             color = "green"
         status_lines.append(f"<span style='color:{color};'><b>{check}:</b> {status}</span>")
 
-    combined_status_html = "<br>".join(status_lines)
+    combined_status_html = "<br>".join(status_lines) + link_html
 
     table_rows += f"""
         <tr>
